@@ -4,7 +4,7 @@
 
 
 AADYA Flight Computer (AFC) V1.0 will be the flight computer of AADYA II
-It has basuic functionalities like data logging, power management and parachute deployment
+It has basic functionalities like data logging, power management and parachute deployment
 Has MPU6050 6DOF IMU and BMP280 Pressure and Temperature Sensor and logs data to a microSD card
 
 
