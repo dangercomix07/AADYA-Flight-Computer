@@ -1,3 +1,7 @@
+// Aadya Flight Computer ESP32
+// Author: Ameya Marakarkandy
+// Last Updated: 18-05-2024
+
 #include <Arduino.h>
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_BMP280.h>
