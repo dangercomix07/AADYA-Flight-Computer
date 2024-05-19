@@ -1,6 +1,6 @@
 # AADYA-Flight-Computer
 
-> Basic but Robust Flight Computer for model Rockets
+> Flight Software for AADYA series of rockets
 
 
 AADYA Flight Computer (AFC) V1.0 will be the flight computer of AADYA II
