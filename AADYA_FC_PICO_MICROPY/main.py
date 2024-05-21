@@ -1,6 +1,6 @@
 # AADYA FLIGHT CODE
 # Author: Ameya Marakarkandy
-# Last Updated: 19/05/2024
+# Last Updated: 21/05/2024
 
 # Hardware configuration:
 # MPU6050 6DOF IMU: I2C
@@ -55,7 +55,17 @@ DEPLOY_SW = Pin(14,Pin.OUT, Pin.PULL_DOWN) # Deploy switch
 #parachute_servo = PWM(27); parachute_servo.freq(50); parachute_servo.duty_u16(1200)
 try:
     cs = Pin(9, Pin.OUT, value = 1)
-    spi = SPI(0, baudrate=1000000, polarity=0, phase=0, bits=8, firstbit=SPI.MSB, sck=Pin(6), mosi=Pin(7), miso=Pin(8)) 
+    spi = SPI(0,
+              baudrate=1000000,
+              polarity=0,
+              phase=0,
+              bits=8,
+              firstbit=SPI.MSB,
+              sck=Pin(6),
+              mosi=Pin(7),
+              miso=Pin(8))
+    # Some issue with MISO pin definintion
+    # Have used a mix of SPI0 and SPI1 (Have to change)
     
     time.sleep(0.1)
 except:
@@ -212,11 +222,23 @@ init_alt = (sum(pr_altimeter)/6)
 print(init_alt)
 start_time = time.time()
 
+## DEPLOYMENT TESTING
+# print("Deployment status",deploy_status)
+# time.sleep(1)
+# power_deploy(1)
+# time.sleep(1)
+# print("Deployment status",deploy_status)
+# toggle_state_led(2)
+# time.sleep(1)
+
 while True:
     INT_LED.on()
     mpu_update(); p = read_bmp(); t = read_temperature()
     #print('ax:',mpu.a[0],'ay:',mpu.a[1],'az:',mpu.a[2])
+    #print("pr:",pr)
+    #print("Altitude:",sum(pr_altimeter)/6)
     #print(t)
+    
     state = 1
     toggle_state_led(state)
 
