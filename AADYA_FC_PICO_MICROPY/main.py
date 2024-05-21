@@ -241,5 +241,6 @@ while True:
     
     state = 1
     toggle_state_led(state)
+    time.sleep(0.02) #50Hz sampling
 
  
