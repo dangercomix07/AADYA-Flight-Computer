@@ -1,3 +1,6 @@
+# Simple micropython libraray for MPU6050
+# https://github.com/adamjezek98/MPU6050-ESP8266-MicroPython
+
 class accel():
     def __init__(self, i2c_client, addr=0x68):
         self.iic = i2c_client
