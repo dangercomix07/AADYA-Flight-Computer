@@ -244,6 +244,9 @@ class ADCS:
             return self.theta_acc
         except:
             print("acc_attitude_meas: GIMBLE_LOCK_THETA")
+            STATE1.toggle()
+            time.sleep_ms(500)
+            STATE1.toggle()
 
     def RollMeas(self):
         global gs_g
@@ -254,6 +257,9 @@ class ADCS:
             return self.phi_acc
         except:
             print("acc_attitude_meas: GIMBLE_LOCK_PHI")
+            STATE3.toggle()
+            time.sleep_ms(500)
+            STATE3.toggle()
 
     def AttitudeEstimation(self):
         self.theta_acc = self.PitchMeas()
@@ -306,6 +312,3 @@ while True:
     state = 2
     toggle_state_led(state)
     time.sleep(0.05) #20Hz sampling
-    
-
- 
