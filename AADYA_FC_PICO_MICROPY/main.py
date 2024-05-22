@@ -1,6 +1,6 @@
 # AADYA FLIGHT CODE
 # Author: Ameya Marakarkandy
-# Last Updated: 21/05/2024
+# Last Updated: 23/05/2024
 
 # Hardware configuration:
 # MPU6050 6DOF IMU: I2C
@@ -13,10 +13,11 @@
 
 # PENDING WORK
 # FSM Implementation remaining
-
 from machine import Pin,I2C, UART, SPI, ADC, PWM
-from math import trunc, log
-import mpu6050_lib, time
+from math import trunc, log, asin, cos, degrees
+import mpu6050_lib, time, uos, SDcard_lib
+from bmp280_lib import *
+import KalmanFilter
 
 # GS CALIBRATION PARAMETERS
 
@@ -76,6 +77,24 @@ try:
 except:
     print("PIN_CONFIGURATION: I2C Failed")
 # PIN CONFIGURATION ENDS
+
+# ATTITUDE ESTIMATION
+dt = 0.05
+theta_0 = 0
+gyro_bias_0 = 0
+
+P00_0 = 0
+P01_0 = 0
+P10_0 = 0
+P11_0 = 0
+
+Qtheta = 0.001
+Qgyrobias = 0.003 
+R = 0.03 # Measurement variance (accelerometer)
+
+kf_pitch = KalmanFilter.KF(Qtheta,Qgyrobias,R)
+kf_roll = KalmanFilter.KF(Qtheta,Qgyrobias,R)
+# ATTITUDE ESTIMATION ENDS
 
 # POWERING ON
 def power_sensors(gamma):
@@ -161,6 +180,8 @@ def read_bmp():
             pr = bmp.pressure
             pr_altimeter[1:6] = pr_altimeter[0:5]
             pr_fall_v[1:5] = pr_fall_v[0:4]
+            
+            # Latest altitude computation
             pr_altimeter[0] = gs_alt-8.314*gs_temp/gs_g/0.0289 * log(pr/gs_pr)
             pr_fall_v[0] = (pr_altimeter[0]-pr_altimeter[1])*1e9/(time.time_ns()-pr_fall_v[5])
             pr_fall_v[5] = time.time_ns()
@@ -206,20 +227,59 @@ def sdc_read(file_path):
         return
 # SD CARD FUNCTIONS ENDS
 
+# ADCS FUNCTIONS
+class ADCS:
+    def __init__(self,mpu):
+        self.mpu = mpu
+        self.theta_acc = 0
+        self.phi_acc = 0
+        self.theta_est = 0
+        self.phi_est = 0
+        
+    def PitchMeas(self):
+        global gs_g
+        ax = self.mpu.a[1]
+        try:
+            self.theta_acc = asin(ax/gs_g)
+            return self.theta_acc
+        except:
+            print("acc_attitude_meas: GIMBLE_LOCK_THETA")
+
+    def RollMeas(self):
+        global gs_g
+        ax = self.mpu.a[1]
+        ay = self.mpu.a[0]
+        try:
+            self.phi_acc = asin(-ay/(gs_g*cos(self.theta_acc)))
+            return self.phi_acc
+        except:
+            print("acc_attitude_meas: GIMBLE_LOCK_PHI")
+
+    def AttitudeEstimation(self):
+        self.theta_acc = self.PitchMeas()
+        self.phi_acc = self.RollMeas()
+        try:
+            self.theta_est = kf_pitch.KalmanFilter(dt,mpu.g[0],self.theta_acc)
+            self.phi_est = kf_roll.KalmanFilter(dt,mpu.g[1],self.phi_acc)
+        except:
+            print("ERROR: AttitudeEstimation")
+# ADCS FUNCTIONS ENDS
+
 
 # MAIN CODE
 
 power_sensors(1)
 time.sleep(3)
-
 try:
     init_sensors()
     print("Sensors initialised")
+    adcs = ADCS(mpu)
+    print("ADCS Initialised")
 except:
     print("Initialisation Failed")
 
 init_alt = (sum(pr_altimeter)/6)
-print(init_alt)
+print("Initial Altitude",init_alt)
 start_time = time.time()
 
 ## DEPLOYMENT TESTING
@@ -233,14 +293,19 @@ start_time = time.time()
 
 while True:
     INT_LED.on()
-    mpu_update(); p = read_bmp(); t = read_temperature()
+    mpu_update(); pr = read_bmp(); t = read_temperature()
     #print('ax:',mpu.a[0],'ay:',mpu.a[1],'az:',mpu.a[2])
     #print("pr:",pr)
     #print("Altitude:",sum(pr_altimeter)/6)
     #print(t)
     
-    state = 1
+    
+    adcs.AttitudeEstimation()
+    print("roll:",degrees(adcs.phi_est),"pitch:",degrees(adcs.theta_est))
+    
+    state = 2
     toggle_state_led(state)
-    time.sleep(0.02) #50Hz sampling
+    time.sleep(0.05) #20Hz sampling
+    
 
  
