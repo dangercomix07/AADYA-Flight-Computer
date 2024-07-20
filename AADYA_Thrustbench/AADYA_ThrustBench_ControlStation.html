@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AADYA THRUST BENCH</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-streaming"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap">
+  <style>
+    body {
+      background-color: #16161c;
+      color: #aabeea;
+      font-family: 'Roboto', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    h1 {
+      font-size:80px;
+      font-weight: 1000;
+      margin-bottom: 20px;
+    }
+
+    button {
+      background-color: #252d41;
+      color: #FFFFFF;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 10px 20px;
+      font-family: 'Courier New', monospace;
+      margin: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #1f57ab;
+    }
+
+    canvas {
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h1>AADYA Rocket Motor Performance</h1>
+  <h3>Experimental Thrust Curve</h3>
+  <div>
+    <button id="startBtn" onclick="startRecording()">Start Recording</button>
+    <button id="stopBtn" onclick="stopRecording()" disabled>Stop Recording</button>
+    <button id="downloadBtn" onclick="downloadCSV()">Download CSV</button>
+    <button id="DoNotBtn">DO NOT PRESS!!</button>
+  </div>
+  <canvas id="thrustChart" width="300" height="100"></canvas>
+
+  <script>
+    let dataPoints = [];
+    let chart;
+    let recording = false;
+    let startTime;
+    let fetchInterval;
+
+    function startRecording() {
+      recording = true;
+      startTime = Date.now();
+      fetchData();
+      fetchInterval = setInterval(fetchData, 100); // Fetch data every 100 ms (10 Hz Update Rate)
+      document.getElementById("startBtn").disabled = true;
+      document.getElementById("stopBtn").disabled = false;
+    }
+
+    function stopRecording() {
+      recording = false;
+      clearInterval(fetchInterval);
+      document.getElementById("startBtn").disabled = false;
+      document.getElementById("stopBtn").disabled = true;
+    }
+
+    function fetchData() {
+      fetch('http://192.168.76.217/')
+        .then(response => response.text())
+        .then(value => {
+          let timeSinceStart = (Date.now() - startTime) / 1000; // Time in seconds
+          dataPoints.push({ x: timeSinceStart, y: parseInt(value) });
+          chart.update();
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    function downloadCSV() {
+      let csvContent = "data:text/csv;charset=utf-8,Time (s),Thrust\n";
+      dataPoints.forEach(point => {
+        csvContent += point.x + "," + point.y + "\n";
+      });
+      let encodedUri = encodeURI(csvContent);
+      let link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "thrust_data.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    window.onload = function() {
+      const ctx = document.getElementById('thrustChart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: [{
+            label: 'Thrust vs Time',
+            backgroundColor: 'rgba(0, 119, 204, 0.3)',
+            borderColor: 'rgb(0, 119, 204)',
+            fill: false,
+            data: dataPoints
+          }]
+        },
+        options: {
+          scales: {
+            x: {
+              type: 'linear',
+              position: 'bottom',
+              title: {
+                display: true,
+                text: 'Time (s)',
+                color: '#FFFFFF'
+              },
+              ticks: {
+                color: '#FFFFFF'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Thrust (N)',
+                color: '#FFFFFF'
+              },
+              ticks: {
+                color: '#FFFFFF'
+              }
+            }
+          },
+          plugins: {
+            streaming: {
+              frameRate: 100 // chart is drawn 100 times per second
+            }
+          },
+          elements: {
+            line: {
+              borderWidth: 2
+            },
+            point: {
+              radius: 0
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
